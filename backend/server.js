@@ -1,7 +1,6 @@
 import dotenv from "dotenv";
 import express from "express";
 import cookieParser from "cookie-parser";
-import { ENV_VARS } from "./config/envVars.js";
 import { connectDB } from "./config/db.js";
 import authRoutes from "./routes/auth.route.js";
 import gymRoutes from "./routes/gym.route.js";
@@ -11,55 +10,39 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { fileURLToPath } from "url";
 
-
 dotenv.config();
+
 const app = express();
-
-
-app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 
-app.use(express.json()); // allows us to parse req.body
-app.use(helmet());
+// 1. Trust Proxy (Crucial for Railway/Health Checks)
+app.set('trust proxy', 1);
+
+// 2. Middleware
+app.use(express.json());
+app.use(cookieParser());
+
+// Helmet config (allowing external scripts/styles if needed)
+app.use(helmet({
+    contentSecurityPolicy: false, 
+}));
 
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+    windowMs: 15 * 60 * 1000,
+    max: 100,
     message: "Too many requests from this IP, please try again after 15 minutes",
 });
-app.use(limiter);
-app.use(cookieParser());
+app.use("/api", limiter); // Only limit API routes
+
+// 3. API Routes
 app.use("/api/v1/gym", gymRoutes);
 app.use("/api/v1/trainers", trainerRoutes);
-
 app.use("/api/v1/auth", authRoutes);
 
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server started on port ${PORT}`);
-});
-
-import { Machine } from "./models/machine.model.js";
-const seedMachines = async () => {
-    const count = await Machine.countDocuments();
-    if (count === 0) {
-        await Machine.insertMany([
-            { name: "Treadmill 01", category: "Cardio" },
-            { name: "Leg Press Max", category: "Strength" },
-            { name: "Bench Press 1", category: "Weights" },
-            { name: "Elliptical 05", category: "Cardio" }
-        ]);
-        console.log("Database Seeded with Machines!");
-    }
-};
-
-
-
-// Fix for __dirname in ES modules
+// 4. Static Files & Production Logic (MUST be before app.listen)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Move up one level to root, then into frontend/dist
-const buildPath = path.join(__dirname, "../frontend/dist");
+const buildPath = path.resolve(__dirname, "../frontend/dist");
 
 if (process.env.NODE_ENV === "production") {
     app.use(express.static(buildPath));
@@ -72,3 +55,8 @@ if (process.env.NODE_ENV === "production") {
     });
 }
 
+// 5. Connect to DB and then Start Server
+app.listen(PORT, "0.0.0.0", () => {
+    connectDB(); // Now the database actually connects
+    console.log(`Server started on port ${PORT}`);
+});
