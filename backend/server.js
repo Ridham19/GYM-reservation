@@ -8,12 +8,15 @@ import trainerRoutes from "./routes/trainer.route.js";
 import path from "path";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import { fileURLToPath } from "url";
 
+
+dotenv.config();
 const app = express();
-app.set('trust proxy', 1); // Add this line here
 
-// const app = express();
-const PORT = ENV_VARS.PORT;
+
+app.set('trust proxy', 1);
+const PORT = process.env.PORT || 5000;
 
 app.use(express.json()); // allows us to parse req.body
 app.use(helmet());
@@ -51,8 +54,6 @@ const seedMachines = async () => {
 };
 
 
-import path from "path";
-import { fileURLToPath } from "url";
 
 // Fix for __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -62,15 +63,17 @@ const __dirname = path.dirname(__filename);
 const buildPath = path.join(__dirname, "../frontend/dist");
 
 if (process.env.NODE_ENV === "production") {
-    // Serve static files from the frontend build folder
     app.use(express.static(buildPath));
-
-    // For any other route, send the index.html file
     app.get("*", (req, res) => {
         res.sendFile(path.join(buildPath, "index.html"));
     });
 } else {
     app.get("/", (req, res) => {
-        res.send("Server is running... Please use the Frontend Dev Server (port 5173)");
+        res.send("Server is running... Please use the Frontend Dev Server");
     });
 }
+
+
+app.listen(PORT, () => {
+    console.log(`Server started at http://localhost:${PORT}`);
+});
