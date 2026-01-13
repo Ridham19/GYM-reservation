@@ -34,11 +34,9 @@ app.use("/api/v1/trainers", trainerRoutes);
 
 app.use("/api/v1/auth", authRoutes);
 
-app.listen(PORT, () => {
-    console.log("Server started at http://localhost:" + PORT);
-    connectDB();
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server started on port ${PORT}`);
 });
-
 
 import { Machine } from "./models/machine.model.js";
 const seedMachines = async () => {
