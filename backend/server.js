@@ -1,3 +1,4 @@
+import dotenv from "dotenv";
 import express from "express";
 import cookieParser from "cookie-parser";
 import { ENV_VARS } from "./config/envVars.js";
